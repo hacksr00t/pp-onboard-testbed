@@ -4,12 +4,23 @@
 **Branch reviewed:** `student/hacksr00t/intake-tuning`
 **Scope:** full `TeamCode/` source tree as it stood on the branch (working tree was clean — this is a baseline review, not a diff review). 11 files, ~4,452 lines. `FtcRobotController/` (the FIRST SDK) was left alone.
 
-Nothing in this document has been fixed yet — it's a read-only findings report to work from.
+## Update — 2026-07-02, same day
+
+Five findings below have code changes proposed (not yet saved/pushed — see each finding for what changed). Everything else in this report is still open. **The odometry and BlueFrontAutoP changes touch odometry offsets/directions and hardware config, both flagged for mandatory review under team policy — they need a testing note and a teammate's sign-off before merging, and the odometry change specifically should be verified on the real robot (Virtual Robot can't validate a physical pod-offset measurement) before it's trusted.**
+
+Two High-severity items were deliberately **not** touched:
+- **Mirroring drift (Blue/Red Back autos, grab-row Y coordinates)** — fixing this means re-measuring the actual field/game-piece layout, which isn't something to guess at from the code alone. A wrong guess here is worse than leaving it flagged.
+- **Game1Auto.java's no-op vision-aim call** — making it actually run means deciding how aiming gets polled into the autonomous loop (a real behavior change to vision alignment, one of the loudly-flagged categories), not a one-line fix. It's tied to the `turnToTag()` fix below, which is now safer to build on top of.
 
 ## Read this first
 
-- **Don't select `BlueFrontAutoP` at a competition or scrimmage.** Its hardware is never actually mapped, and one of its own states calls `launcher.setPower(0.0)` on a launcher that was never assigned — that's a guaranteed crash. Even if fixed, its shoot/intake states are still empty `// TODO` stubs, so today it only drives the path and does nothing else.
-- **Two files disagree about where the Pinpoint odometry pods physically are.** `Constants.java` (used by autonomous) and `LimelightDecodeDriveMode.java` (used by TeleOp) set different offsets and different encoder directions for the same physical `"odo"` sensor — including a sign flip. Whichever one is stale will localize the robot wrong.
+- **~~Don't select `BlueFrontAutoP` at a competition or scrimmage.~~ Partially fixed.** `init()` now maps `intakeMotor`, `boxMotor`, `leftFeeder`, `rightFeeder`, `topWheel`, and `launcher` via `hardwareMap.get(...)`, using the same device-name strings every other file already uses — this removes the guaranteed `NullPointerException` in the `COMPLETED` state. **Still true:** the shoot/intake states are still empty `// TODO` stubs and `shooterFunctionUpdate()` is still never called from `loop()` — this auto will no longer crash, but it still only drives the path and doesn't shoot or intake. Don't run it expecting scoring until that logic is written.
+- **Odometry offset/direction conflict — fix proposed.** `LimelightDecodeDriveMode.java` now uses the same offsets (`23.0124, -134.112`) and encoder directions (`FORWARD, REVERSED`) as `Constants.java`'s active (non-commented) `localizerConstants`. Constants.java's own commented-out `// OLD VALUES BELOW` block was the exact pair LimelightDecodeDriveMode.java was still using, which is why this was picked as the source of truth over the reverse. **Confirm this on the real robot** — a wrong sign here means the robot will localize incorrectly in TeleOp.
+
+**Also fixed this round:**
+- **RedFrontAutoP.java — wrong next-state bug.** `case GO_TO_GRAB_FINAL_3` now transitions to `GRAB_FINAL_3` instead of `GRAB_NEXT_3`, so the auto actually proceeds to grab/shoot the final set instead of looping back.
+- **LimelightDecodeDriveMode.java — laser distance unit bug.** Removed the erroneous extra `* 25.4`; the value is already in millimeters (`MAX_DISTANCE_MM`), and the variable is renamed `distanceMm` to match what it actually holds and what the telemetry label already said.
+- **intakeOuttake.java — `turnToTag()` safety.** Replaced the no-op `assert llResult != null` with a real `if (!isValid) continue;` guard, and added a drivetrain zero-power call after the turn loop exits (it previously left the last commanded power applied indefinitely). This method is still uncalled everywhere — these are defensive fixes for whenever it's re-enabled, not a behavior change today.
 
 ## High severity (7)
 

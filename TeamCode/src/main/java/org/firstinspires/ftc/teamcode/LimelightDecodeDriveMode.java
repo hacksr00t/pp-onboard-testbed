@@ -107,7 +107,9 @@ public class LimelightDecodeDriveMode extends LinearOpMode {
 
 
         //Direction
-        odo.setEncoderDirections(GoBildaPinpointDriver.EncoderDirection.REVERSED, GoBildaPinpointDriver.EncoderDirection.REVERSED);
+        // Matches Constants.java's localizerConstants (forwardEncoderDirection/strafeEncoderDirection)
+        // used by the autonomous Pedro follower for this same physical "odo" sensor.
+        odo.setEncoderDirections(GoBildaPinpointDriver.EncoderDirection.FORWARD, GoBildaPinpointDriver.EncoderDirection.REVERSED);
 
 
        /*
@@ -120,8 +122,9 @@ public class LimelightDecodeDriveMode extends LinearOpMode {
         */
         odo.recalibrateIMU();
         odo.resetPosAndIMU();
-        // Measure in milimeters at the meeting, this is not currently accurate.
-        odo.setOffsets(-22.1, -136.4, DistanceUnit.MM); //these are tuned for 3110-0002-0001 Product Insight #1
+        // Matches Constants.java's localizerConstants (strafePodX / forwardPodY) for this same
+        // physical "odo" sensor — Constants.java superseded the old -22.1/-136.4 measurement.
+        odo.setOffsets(23.0124, -134.112, DistanceUnit.MM);
         odo.update();
         pos = odo.getPosition();
         odo.setPosition(new Pose2D(DistanceUnit.MM,
@@ -160,7 +163,7 @@ public class LimelightDecodeDriveMode extends LinearOpMode {
 
 
             // Convert voltage to distance in millimeters (linear mapping)
-            double distanceInch = ((volts / MAX_VOLTS) * MAX_DISTANCE_MM) * 25.4;
+            double distanceMm = (volts / MAX_VOLTS) * MAX_DISTANCE_MM;
 
 
             odo.update();
@@ -168,7 +171,7 @@ public class LimelightDecodeDriveMode extends LinearOpMode {
 
             // Telemetry
             telemetry.addData("Voltage (V)", "%.3f", volts);
-            telemetry.addData("Distance (mm)", "%.1f", distanceInch);
+            telemetry.addData("Distance (mm)", "%.1f", distanceMm);
 
             int red = colorSensor.red();
             int blue = colorSensor.blue();

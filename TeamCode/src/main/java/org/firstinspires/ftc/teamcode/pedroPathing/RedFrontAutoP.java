@@ -256,7 +256,7 @@ public class RedFrontAutoP extends OpMode {
 
                     if (pathTimer.getElapsedTimeSeconds() > 0.25) {
                         follower.followPath(Path7, true);
-                        setPathState(PathState.GRAB_NEXT_3);
+                        setPathState(PathState.GRAB_FINAL_3);
                     }
                 }
                 break;
