@@ -38,22 +38,32 @@ Two High-severity items were deliberately **not** touched:
 
 7. **BlueBackAutoP.java vs RedBackAutoP.java · grab-row Y coordinates & headings** — Mirroring drift between the Blue and Red autos. Start poses mirror cleanly, but the three "grab row" Y-values that should mirror identically instead differ by **6.0", 6.0", and 4.77"** respectively. A couple of heading transitions are also ~5° off from an exact mirror (Blue 90°→113° vs. Red 90°→62°, where an exact mirror predicts ~67°). Worth a field-measurement check before trusting both sides equally.
 
+## Update — 2026-07-03
+
+PR #1 (odometry fix, BlueFrontAutoP crash fix, RedFrontAutoP fix, laser-distance fix, turnToTag safety fix) merged into `master`. This round (`student/hacksr00t/review-cleanup`) picks off three more mechanical, no-judgment-call findings:
+
+- **Medium #1 fixed** — `RedBackAutoP.java`'s missing `break` is now in place.
+- **Medium #8 fixed** — Dead `Path12` removed from `BlueBackAutoP.java`.
+- **Low #2 fixed** — Dead `run(String)` method removed from `ClearBotVision.java`, along with the stale commented-out call sites that referenced it.
+
+Everything else below is still open — each remaining item needs either a tuning/design decision (shooter velocity, PIDF gains, the laser-distance feature) or field verification (mirroring drift) that isn't mine to make.
+
 ## Medium severity (9)
 
-1. **RedBackAutoP.java · `case GO_TO_GRAB_NEXT_3`, ~lines 236–247** — Missing `break` causes a switch fallthrough into `GRAB_NEXT_3`. Currently harmless (timer reset masks it), but fragile.
+1. ~~RedBackAutoP.java · `case GO_TO_GRAB_NEXT_3`, ~lines 236–247 — Missing `break` causes a switch fallthrough into `GRAB_NEXT_3`.~~ **Fixed.**
 2. **BlueBackAutoP (1580) vs RedBackAutoP/RedFrontAutoP (1300) vs intakeOuttake.java (1200, unused)** — Shooter velocity differs by alliance with no documented reason.
 3. **intakeOuttake.java · fiducial loop, ~line 138** — `assert llResult != null` is used as a null-check, but Java assertions are disabled by default at runtime — it's a no-op in production. A working `isValid` boolean is computed nearby but unused here.
 4. **LimelightDecodeDriveMode.java · `calculateRPM()`, lines 369–381** — `angle = 45` (meant as degrees) is fed directly into `Math.cos`/`Math.tan`, which expect radians. Currently dead code (never called anywhere), but wrong the moment it's wired up.
 5. **Constants.java · line 24, TODOs at 31–32** — Heading PIDF has negative P/D gains, and the file still carries `// TODO HEADING PIDF (NEED HELP)` / `// TODO DRIVE TUNING` — confirm these are actually finalized.
 6. **ClearBotVision.java · line 51** — Assumes `classifications.get(0)` is the highest-confidence detection without confirming that against the Limelight API/docs.
 7. **ClearBotVision.java:23 · intakeOuttake.java:76 · LimelightDecodeDriveMode.java:89** — Limelight pipeline index `8` hardcoded independently in three files with no shared constant.
-8. **BlueBackAutoP.java · `Path12`, ~lines 153–161** — Built but never referenced by its own state machine; likely leftover.
+8. ~~BlueBackAutoP.java · `Path12`, ~lines 153–161 — Built but never referenced by its own state machine.~~ **Fixed — removed.**
 9. **intakeOuttake.java · fields ~39–41** — Laser-distance feature is half-built: `laserAnalog`/`distance`/`MAX_VOLTS`/`MAX_DISTANCE_MM` are declared but the voltage is never converted into a distance anywhere in the class.
 
 ## Low severity / polish (4)
 
 1. **intakeOuttake.java · lines 53–56** — Motor field names don't match their hardware-map string names (`leftFront` ↔ `"frontLeft"`, `rightBack` ↔ `"backRight"`). Functionally fine, just confusing to read.
-2. **ClearBotVision.java · lines 101–113** — Dead `run(String)` method; both call sites are commented out.
+2. ~~ClearBotVision.java · lines 101–113 — Dead `run(String)` method; both call sites are commented out.~~ **Fixed — removed.**
 3. **intakeOuttake.java lines 144–147 · LimelightDecodeDriveMode.java lines 308–314** — Unexplained magic numbers in aim-assist logic: `kP = 0.02`, ±0.3 turn clamp, AprilTag IDs `20`/`24`, a `tx + 3` offset.
 4. **Across all four autonomous OpModes** — A long list of raw timer thresholds (`0.25, 0.3, 0.5, 0.75, 2.0, 3.5, 4.0, 4.5, 5.5, 7.0, 7.5, 7.75` seconds) with no named constants distinguishing safety margins from tuned timing.
 

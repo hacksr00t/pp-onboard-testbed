@@ -60,11 +60,9 @@ public class ClearBotVision extends LinearOpMode {
                     if (confidence >= CONFIDENCE_LIMIT) {
                         // certain buttons and certain detections == certain actions + data
                         if (gamepad1.a && detected.equals("Shoot")) {
-                            // run("Shoot");
                             telemetry.addLine("ACTION RUNNING: Shoot identifier detected, running...");
                         }
                         if (gamepad1.b && detected.equals("Come")) {
-                            // run("Come");
                             telemetry.addLine("ACTION RUNNING: Come identifiier detected, moving...");
                         }
                     } else {
@@ -92,23 +90,5 @@ public class ClearBotVision extends LinearOpMode {
             telemetry.update();
         }
         limelight.stop();
-    }
-
-    // actual robot action ..//TODO
-    // inputs the class's names from the model via teachable machine
-    // run is the function that is used in runOpMode for performing the actions via
-    // button presses and certain confidence levels in classes
-    private void run(String objectClassName) {
-        switch(objectClassName) {
-            case "Come":
-                // robot action
-                telemetry.addLine("RUNNING ACTION 'Come'");
-                break;
-            case "Shoot":
-                // robot action
-                telemetry.addLine("RUNNING ACTION 'Shoot'");
-                break;
-
-        }
     }
 }
