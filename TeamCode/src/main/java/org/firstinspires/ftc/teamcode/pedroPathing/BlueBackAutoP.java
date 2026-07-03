@@ -41,7 +41,7 @@ public class BlueBackAutoP extends OpMode {
     PathState pathState;
     private final Pose startPose = new Pose (58.85647607934656, 8, Math.toRadians(90));
 
-    private PathChain Path1, Path2, Path3, Path4, Path5, Path6, Path7, Path8, Path9, Path10, Path11, Path12; // The multiple paths
+    private PathChain Path1, Path2, Path3, Path4, Path5, Path6, Path7, Path8, Path9, Path10, Path11; // The multiple paths
 
     public void buildPaths() {
         Path1 = follower.pathBuilder().addPath(
@@ -147,16 +147,6 @@ public class BlueBackAutoP extends OpMode {
                                 new Pose(58.856, 10.964)
                         )
                 ).setLinearHeadingInterpolation(Math.toRadians(0), Math.toRadians(113))
-
-                .build();
-
-        Path12 = follower.pathBuilder().addPath(
-                        new BezierLine(
-                                new Pose(58.856, 10.964),
-
-                                new Pose(24.159, 69.869)
-                        )
-                ).setLinearHeadingInterpolation(Math.toRadians(113), Math.toRadians(180))
 
                 .build();
     }

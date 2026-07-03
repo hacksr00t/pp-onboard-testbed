@@ -244,6 +244,7 @@ public class RedBackAutoP extends OpMode {
                         setPathState(PathState.GRAB_NEXT_3);
                     }
                 }
+                break;
             case GRAB_NEXT_3:
                 // Grab second set of 3 artifacts
                 if (!follower.isBusy() && pathTimer.getElapsedTimeSeconds() > 0.3) {
