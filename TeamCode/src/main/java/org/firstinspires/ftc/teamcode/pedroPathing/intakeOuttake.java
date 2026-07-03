@@ -135,7 +135,7 @@ public class intakeOuttake {
                 LLResult llResult = limelight.getLatestResult();
                 boolean isValid = llResult != null && llResult.isValid();
                 double motiffID = 0;
-                assert llResult != null;
+                if (!isValid) continue;
                 for(LLResultTypes.FiducialResult fid :llResult.getFiducialResults()) {
                     motiffID = fid.getFiducialId();
                 } if (turn && isValid && ((motiffID == 20 && blue) || (motiffID == 24 && !blue))) {
@@ -172,6 +172,13 @@ public class intakeOuttake {
 
 
             }
+
+            // Leave the drivetrain at zero power once the turn finishes or times out,
+            // instead of holding whatever power was last commanded.
+            leftFront.setPower(0.0);
+            leftBack.setPower(0.0);
+            rightFront.setPower(0.0);
+            rightBack.setPower(0.0);
 
             return false;
         }

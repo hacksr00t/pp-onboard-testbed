@@ -285,7 +285,13 @@ public class BlueFrontAutoP extends OpMode {
         pathTimer = new Timer();
         opModeTimer = new Timer();
         follower = Constants.createFollower(hardwareMap); // TODO IN Constants.java
-        // TODO add any init (limelight, flywheel, mechanisms)
+
+        intakeMotor = hardwareMap.get(DcMotor.class, "intakeMotor");
+        boxMotor = hardwareMap.get(DcMotor.class, "boxMotor");
+        leftFeeder = hardwareMap.get(CRServo.class, "leftFeeder");
+        rightFeeder = hardwareMap.get(CRServo.class, "rightFeeder");
+        topWheel = hardwareMap.get(CRServo.class, "topWheel");
+        launcher = hardwareMap.get(DcMotorEx.class, "launcherMotor");
 
         buildPaths();
         follower.setPose(startPose);
