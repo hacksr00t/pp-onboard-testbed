@@ -119,68 +119,82 @@ public class intakeOuttake {
 
 
     public class turnToTag implements Action {
+        private static final double SEARCH_POWER = 0.15;
+        private static final double GIVE_UP_SECONDS = 0.7;
+
         boolean turn;
         boolean blue;
+        boolean everSeenTag = false;
+
         public turnToTag(boolean turn, boolean blue) {
             this.turn = turn;
             this.blue = blue;
             turningTime.reset();
-
         }
+
+        // One step per call - call this every loop tick while searching/aligning.
+        // Returns true while it still needs more ticks, false once aligned or given up.
         @Override
         public boolean run(@NonNull TelemetryPacket packet) {
-            while (turn && turningTime.seconds() < 1.0) {
-                YawPitchRollAngles orientation = imu.getRobotYawPitchRollAngles();
-                limelight.updateRobotOrientation(orientation.getYaw(AngleUnit.DEGREES));
-                LLResult llResult = limelight.getLatestResult();
-                boolean isValid = llResult != null && llResult.isValid();
-                double motiffID = 0;
-                if (!isValid) continue;
-                for(LLResultTypes.FiducialResult fid :llResult.getFiducialResults()) {
-                    motiffID = fid.getFiducialId();
-                } if (turn && isValid && ((motiffID == 20 && blue) || (motiffID == 24 && !blue))) {
-                        double tx = llResult.getTx();
-                        // 'amt' of turn
-                        double kP = 0.02;
-                        double turnPower = kP * (tx);
-                        turnPower = Math.max(-0.3, Math.min(0.3, turnPower));
-                        if (Math.abs(tx+3) < 1.0)  turn = false; // may neeed to be 2.5 < math.abs(tx) < 3.5 //Example for offset of 3 with 0.5 margins
-
-
-                        // Rotate robot via above
-                        leftFront.setPower(-turnPower);
-                        leftBack.setPower(-turnPower);
-                        rightFront.setPower(turnPower);
-                        rightBack.setPower(turnPower);
-
-
-                        // Telemetry for data
-                } else {
-                    /*if (blue) {
-                        leftFront.setPower(1.0);
-                        leftBack.setPower(1.0);
-                        rightFront.setPower(-1.0);
-                        rightBack.setPower(-1.0);
-                    } else {
-                        leftFront.setPower(-1.0);
-                        leftBack.setPower(-1.0);
-                        rightFront.setPower(1.0);
-                        rightBack.setPower(1.0);
-                    }
-                    */
-                }
-
-
+            if (!turn) {
+                stopDrive();
+                return false;
             }
 
-            // Leave the drivetrain at zero power once the turn finishes or times out,
-            // instead of holding whatever power was last commanded.
+            YawPitchRollAngles orientation = imu.getRobotYawPitchRollAngles();
+            limelight.updateRobotOrientation(orientation.getYaw(AngleUnit.DEGREES));
+            LLResult llResult = limelight.getLatestResult();
+            boolean isValid = llResult != null && llResult.isValid();
+            double motiffID = 0;
+            if (isValid) {
+                for (LLResultTypes.FiducialResult fid : llResult.getFiducialResults()) {
+                    motiffID = fid.getFiducialId();
+                }
+            }
+            boolean seesRightTag = isValid && ((motiffID == 20 && blue) || (motiffID == 24 && !blue));
+
+            if (seesRightTag) {
+                everSeenTag = true;
+                double tx = llResult.getTx();
+                // 'amt' of turn
+                double kP = 0.02;
+                double turnPower = kP * (tx);
+                turnPower = Math.max(-0.3, Math.min(0.3, turnPower));
+                if (Math.abs(tx + 3) < 1.0) { // may need to be 2.5 < math.abs(tx) < 3.5 //Example for offset of 3 with 0.5 margins
+                    turn = false;
+                    stopDrive();
+                    return false;
+                }
+
+                // Rotate robot via above
+                leftFront.setPower(-turnPower);
+                leftBack.setPower(-turnPower);
+                rightFront.setPower(turnPower);
+                rightBack.setPower(turnPower);
+                return true;
+            }
+
+            // Tag not visible this tick. If we've never seen it at all after a few
+            // seconds of searching, give up instead of spinning forever.
+            if (!everSeenTag && turningTime.seconds() > GIVE_UP_SECONDS) {
+                turn = false;
+                stopDrive();
+                return false;
+            }
+
+            // Sweep slowly to try to pick the tag back up.
+            leftFront.setPower(-SEARCH_POWER);
+            leftBack.setPower(-SEARCH_POWER);
+            rightFront.setPower(SEARCH_POWER);
+            rightBack.setPower(SEARCH_POWER);
+            return true;
+        }
+
+        private void stopDrive() {
             leftFront.setPower(0.0);
             leftBack.setPower(0.0);
             rightFront.setPower(0.0);
             rightBack.setPower(0.0);
-
-            return false;
         }
     }
 

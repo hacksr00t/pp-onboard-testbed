@@ -312,6 +312,7 @@ public class BlueFrontAutoP extends OpMode {
         telemetry.addData("y", follower.getPose().getY());
         telemetry.addData("heading", follower.getPose().getHeading());
         telemetry.addData("path time in seconds", pathTimer.getElapsedTimeSeconds());
+        telemetry.update();
     }
 }
 
