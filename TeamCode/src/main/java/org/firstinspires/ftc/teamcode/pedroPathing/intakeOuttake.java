@@ -74,6 +74,7 @@ public class intakeOuttake {
 
         limelight = hardwareMap.get(Limelight3A.class, "limelight");
         limelight.pipelineSwitch(8);
+        limelight.start();
 
 
         // IMU HERE!
@@ -119,8 +120,9 @@ public class intakeOuttake {
 
 
     public class turnToTag implements Action {
-        private static final double SEARCH_POWER = 0.15;
-        private static final double GIVE_UP_SECONDS = 0.7;
+        private static final double SEARCH_POWER = 0.3;
+        private static final double GIVE_UP_SECONDS = 2.0; // widened temporarily to test whether the pose-variance theory is right
+        private static final double MAX_SEARCH_SECONDS = 3.0; // hard cap, even once a tag has been seen
 
         boolean turn;
         boolean blue;
@@ -142,6 +144,14 @@ public class intakeOuttake {
                 return false;
             }
 
+            // Hard cap so a bad lock (found the tag, then can't quite finish aligning)
+            // can't hang the auto forever - eventually give up and let the shot happen anyway.
+            if (turningTime.seconds() > MAX_SEARCH_SECONDS) {
+                turn = false;
+                stopDrive();
+                return false;
+            }
+
             YawPitchRollAngles orientation = imu.getRobotYawPitchRollAngles();
             limelight.updateRobotOrientation(orientation.getYaw(AngleUnit.DEGREES));
             LLResult llResult = limelight.getLatestResult();
@@ -159,9 +169,9 @@ public class intakeOuttake {
                 double tx = llResult.getTx();
                 lastTx = tx;
                 // 'amt' of turn
-                double kP = 0.02;
+                double kP = 0.015;
                 double turnPower = kP * (tx);
-                turnPower = Math.max(-0.3, Math.min(0.3, turnPower));
+                turnPower = Math.max(-0.18, Math.min(0.18, turnPower));
                 if (Math.abs(tx + 3) < 1.0) { // may need to be 2.5 < math.abs(tx) < 3.5 //Example for offset of 3 with 0.5 margins
                     turn = false;
                     stopDrive();
@@ -184,11 +194,14 @@ public class intakeOuttake {
                 return false;
             }
 
-            // Sweep slowly to try to pick the tag back up.
-            leftFront.setPower(-SEARCH_POWER);
-            leftBack.setPower(-SEARCH_POWER);
-            rightFront.setPower(SEARCH_POWER);
-            rightBack.setPower(SEARCH_POWER);
+            // Sweep slowly to try to pick the tag back up - continue turning the same
+            // direction it was last correcting toward, instead of always one fixed way
+            // (which could sweep further from the tag if it's lost mid-alignment).
+            double sweepPower = (!Double.isNaN(lastTx) && lastTx < 0) ? -SEARCH_POWER : SEARCH_POWER;
+            leftFront.setPower(-sweepPower);
+            leftBack.setPower(-sweepPower);
+            rightFront.setPower(sweepPower);
+            rightBack.setPower(sweepPower);
             return true;
         }
 

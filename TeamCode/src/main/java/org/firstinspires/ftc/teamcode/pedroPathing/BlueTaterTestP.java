@@ -62,6 +62,10 @@ public class BlueTaterTestP extends OpMode {
             case SEARCH_TAG:
                 if (!follower.isBusy()) {
                     if (searchAction == null) {
+                        // Pedro holds the end-of-path pose by driving these same motors every
+                        // update() otherwise, fighting turnToTag's own motor commands - release it
+                        // so turnToTag has sole control of the drivetrain during the search.
+                        follower.breakFollowing();
                         take.launcher.setVelocity(1580.0);
                         searchAction = take.new turnToTag(true, true); // true = blue alliance
                     }
@@ -103,7 +107,10 @@ public class BlueTaterTestP extends OpMode {
     public void setPathState(PathState newState) { // nice helper function
         pathState = newState;
         pathTimer.resetTimer();
-        RobotLog.ii(LOG_TAG, "state -> %s at opmode t=%.2fs", newState, opModeTimer.getElapsedTimeSeconds());
+        RobotLog.ii(LOG_TAG, "state -> %s at opmode t=%.2fs, pose x=%.2f y=%.2f heading=%.1fdeg",
+                newState, opModeTimer.getElapsedTimeSeconds(),
+                follower.getPose().getX(), follower.getPose().getY(),
+                Math.toDegrees(follower.getPose().getHeading()));
     }
 
     public void init() {
@@ -136,10 +143,12 @@ public class BlueTaterTestP extends OpMode {
         telemetry.update();
 
         if (pathState == PathState.SEARCH_TAG && logTimer.seconds() > LOG_INTERVAL_SECONDS) {
-            RobotLog.ii(LOG_TAG, "searching t=%.2fs tx=%.1f everSeenTag=%b",
+            RobotLog.ii(LOG_TAG, "searching t=%.2fs tx=%.1f everSeenTag=%b, pose x=%.2f y=%.2f heading=%.1fdeg",
                     pathTimer.getElapsedTimeSeconds(),
                     searchAction != null ? searchAction.lastTx : Double.NaN,
-                    searchAction != null && searchAction.everSeenTag);
+                    searchAction != null && searchAction.everSeenTag,
+                    follower.getPose().getX(), follower.getPose().getY(),
+                    Math.toDegrees(follower.getPose().getHeading()));
             logTimer.reset();
         }
     }
