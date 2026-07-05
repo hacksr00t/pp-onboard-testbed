@@ -8,6 +8,8 @@ import com.pedropathing.paths.PathChain;
 import com.pedropathing.util.Timer;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
+import com.qualcomm.robotcore.util.ElapsedTime;
+import com.qualcomm.robotcore.util.RobotLog;
 
 // Blue alliance, back position: drive to the shoot spot, search/align to the
 // AprilTag with turnToTag, then take one shot. Simpler "search, aim, shoot" auto,
@@ -19,6 +21,12 @@ public class BlueTaterTestP extends OpMode {
     private Follower follower;
     private intakeOuttake take;
     private intakeOuttake.turnToTag searchAction;
+
+    // Persisted diagnostics: telemetry.addData() is live-only, so mirror the search
+    // progress into robotControllerLog.txt (pullable after the run) at a throttled rate.
+    private static final String LOG_TAG = "BlueTaterTestP";
+    private static final double LOG_INTERVAL_SECONDS = 0.2;
+    private final ElapsedTime logTimer = new ElapsedTime();
 
     public enum PathState {
         DRIVE_STARTING_SHOOT_POS,
@@ -95,6 +103,7 @@ public class BlueTaterTestP extends OpMode {
     public void setPathState(PathState newState) { // nice helper function
         pathState = newState;
         pathTimer.resetTimer();
+        RobotLog.ii(LOG_TAG, "state -> %s at opmode t=%.2fs", newState, opModeTimer.getElapsedTimeSeconds());
     }
 
     public void init() {
@@ -125,5 +134,13 @@ public class BlueTaterTestP extends OpMode {
         telemetry.addData("path time in seconds", pathTimer.getElapsedTimeSeconds());
         telemetry.addData("search - ever saw tag", searchAction != null && searchAction.everSeenTag);
         telemetry.update();
+
+        if (pathState == PathState.SEARCH_TAG && logTimer.seconds() > LOG_INTERVAL_SECONDS) {
+            RobotLog.ii(LOG_TAG, "searching t=%.2fs tx=%.1f everSeenTag=%b",
+                    pathTimer.getElapsedTimeSeconds(),
+                    searchAction != null ? searchAction.lastTx : Double.NaN,
+                    searchAction != null && searchAction.everSeenTag);
+            logTimer.reset();
+        }
     }
 }

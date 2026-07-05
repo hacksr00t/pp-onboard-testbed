@@ -125,6 +125,7 @@ public class intakeOuttake {
         boolean turn;
         boolean blue;
         boolean everSeenTag = false;
+        double lastTx = Double.NaN; // last tx seen from the tag, for diagnostic logging
 
         public turnToTag(boolean turn, boolean blue) {
             this.turn = turn;
@@ -156,6 +157,7 @@ public class intakeOuttake {
             if (seesRightTag) {
                 everSeenTag = true;
                 double tx = llResult.getTx();
+                lastTx = tx;
                 // 'amt' of turn
                 double kP = 0.02;
                 double turnPower = kP * (tx);
